@@ -1,0 +1,20 @@
+{
+  "name": "纠结消消乐",
+  "short_name": "纠结消消乐",
+  "description": "把今天的小纠结装进盲盒，拆出一个能落地的小答案。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff8ef",
+  "theme_color": "#ff8a3d",
+  "orientation": "portrait",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
