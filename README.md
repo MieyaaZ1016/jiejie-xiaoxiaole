@@ -21,12 +21,16 @@ npm run dev          # http://localhost:3000
 
 | 变量 | 说明 | 必需 |
 |---|---|---|
-| `GEMINI_API_KEY` | Google AI Studio 拿的免费 key，开启 AI 答案 | 开 AI 才需要 |
+| `LLM_PROVIDER` | `gemini`（默认）/ `deepseek`（国内可直连）/ `anthropic` / `openai` | 否 |
+| `GEMINI_API_KEY` | Google AI Studio 的免费 key | 用 gemini 时 |
+| `DEEPSEEK_API_KEY` | DeepSeek 的 key（platform.deepseek.com，国内可注册） | 用 deepseek 时 |
+| `ANTHROPIC_API_KEY` | Anthropic key | 用 anthropic 时 |
+| `OPENAI_API_KEY` | OpenAI key | 用 openai 时 |
 | `DATABASE_URL` | Postgres 连接串（Neon / Vercel Postgres） | 开真社区才需要 |
-| `LLM_PROVIDER` | `gemini`（默认）或 `anthropic` | 否 |
-| `ANTHROPIC_API_KEY` | 用 Anthropic 时填 | 否 |
 | `DAILY_LIMIT` | 每 IP 每天调用上限（默认 40） | 否 |
 | `NEXT_PUBLIC_SITE_URL` | 站点 URL（OG 图用），如 `https://xxx.vercel.app` | 否 |
+
+> DeepSeek / OpenAI 没有内建联网搜索，「找附近的店」会退化成普通答案；Gemini / Anthropic 支持真实搜索。
 
 数据库表（posts / votes / rate_limit）在首次访问时自动建好，无需手动迁移。
 
