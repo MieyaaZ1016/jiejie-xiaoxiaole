@@ -52,7 +52,7 @@ export default function App() {
           </div>
           <div className="top-actions">
             <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="设置" aria-label="设置">⚙️</button>
-            <span className="pill">v3.0</span>
+            <span className="pill">v3.1</span>
           </div>
         </header>
 
