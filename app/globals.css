@@ -2229,3 +2229,49 @@ button.ghost:hover { background: var(--bg-2); color: var(--ink); }
   .brand h1 { font-size: 30px; }
   .garden-canvas { max-height: 280px; }
 }
+
+/* ===================== 小花园 · 花卉图鉴 (v3.2) ===================== */
+.flower-bed { position: relative; margin-top: 4px; }
+.flower-bed .bed-row {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center;
+  gap: 2px 6px; min-height: 92px; padding: 6px 6px 0;
+}
+.flower-bed .bed-flower {
+  width: 46px; height: 58px; display: inline-flex; align-items: flex-end;
+  transform-origin: bottom center; animation: bed-pop .5s cubic-bezier(.2,.8,.3,1.2) both;
+}
+.flower-bed .bed-flower svg { width: 100%; height: 100%; overflow: visible; }
+.flower-bed .bed-flower.r-epic svg { filter: drop-shadow(0 0 5px rgba(168,85,247,.5)); }
+.flower-bed .bed-flower.r-legendary svg { filter: drop-shadow(0 0 7px rgba(245,166,35,.75)); }
+@keyframes bed-pop { from { transform: translateY(8px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.flower-bed .bed-soil {
+  height: 22px; border-radius: 0 0 var(--r-sm) var(--r-sm);
+  background: linear-gradient(#d8c193, #c7ab78);
+  box-shadow: inset 0 3px 0 #b8a37d; margin-top: -8px;
+}
+
+.dex-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px;
+}
+@media (min-width: 460px) { .dex-grid { grid-template-columns: repeat(4, 1fr); } }
+.dex-cell {
+  position: relative; border: 1.5px solid var(--line); border-top: 3px solid var(--rar, var(--line));
+  border-radius: var(--r-sm); background: var(--bg-2, #fff); padding: 22px 6px 9px;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-height: 104px; justify-content: flex-end; overflow: hidden;
+}
+.dex-cell .dex-icon { width: 50px; height: 56px; display: inline-flex; align-items: flex-end; }
+.dex-cell .dex-icon svg { width: 100%; height: 100%; overflow: visible; }
+.dex-cell .dex-name { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.dex-cell .dex-rarity {
+  position: absolute; top: 5px; left: 0; right: 0; font-size: 10px; font-weight: 700;
+  letter-spacing: .3px; opacity: .9;
+}
+.dex-cell .dex-count {
+  position: absolute; bottom: 6px; right: 7px; font-size: 11px; font-weight: 800;
+  color: var(--ink-2); background: var(--bg); border-radius: 999px; padding: 0 5px;
+}
+.dex-cell.locked { background: var(--bg); }
+.dex-cell.locked .dex-icon svg { filter: grayscale(1) brightness(0); opacity: .16; }
+.dex-cell.locked .dex-name { color: var(--muted); letter-spacing: 2px; }
+.dex-cell:not(.locked)[style*="--rar"] { box-shadow: 0 1px 0 rgba(0,0,0,.02); }

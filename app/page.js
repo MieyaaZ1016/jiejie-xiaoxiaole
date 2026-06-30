@@ -5,6 +5,7 @@ import * as ans from '@/lib/answers';
 import * as creatures from '@/lib/creatures';
 import { compute as computePersona } from '@/lib/personality';
 import { lenses, dailies, quickQs, themes } from '@/lib/data';
+import { SPECIES, RARITY, speciesById, totalSpecies } from '@/lib/garden';
 import { toast, burstAt, sfx, haptic } from '@/lib/ui';
 import ScratchCard from '@/components/ScratchCard';
 import { Svg, Typewriter } from '@/components/bits';
@@ -52,7 +53,7 @@ export default function App() {
           </div>
           <div className="top-actions">
             <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="设置" aria-label="设置">⚙️</button>
-            <span className="pill">v3.1</span>
+            <span className="pill">v3.2</span>
           </div>
         </header>
 
@@ -125,7 +126,10 @@ function TodayScratch() {
   const onComplete = () => {
     if (!store.isScratched(store.todayStr())) {
       store.markDailyScratched(store.todayStr());
-      sfx.ding(); haptic([10, 40, 20]); toast('今天这颗球，刮开了');
+      const drop = store.addDrop('daily');
+      sfx.ding(); haptic([10, 40, 20]);
+      if (drop) { const r = RARITY[drop.rarity]; toast(`${r.emoji} 今日掉落「${drop.name}」· ${r.name}花`); }
+      else toast('今天这颗球，刮开了');
     }
     setRevealed(true);
   };
@@ -256,11 +260,22 @@ function Worry({ tick, refresh, onShare }) {
 
   const accept = () => {
     if (!answer) return;
-    store.recordAccept({
+    const drop = store.recordAccept({
       q: answer.q, tag: answer.tag, ans: answer.kw, plan: answer.plan, why: answer.why,
       time: new Date().toLocaleString(), source: answer.source, lens: answer.lens,
     });
-    sfx.ding(); haptic([10, 40, 10, 40, 20]); refresh(); toast('已存进博物馆');
+    sfx.ding(); haptic([10, 40, 10, 40, 20]); refresh();
+    if (drop) {
+      const r = RARITY[drop.rarity];
+      toast(`${r.emoji} 收获「${drop.name}」· ${r.name}花`);
+      if (drop.rarity === 'epic' || drop.rarity === 'legendary') {
+        const el = document.querySelector('.answer .actions button');
+        if (el) burstAt(el, 40);
+        haptic([0, 60, 30, 60, 30, 90]);
+      }
+    } else {
+      toast('已存进博物馆');
+    }
   };
 
   const counters = `今天少想：${s.saved} 次｜已拆小事：${s.opened} 个`;
@@ -419,116 +434,77 @@ function Museum({ tick }) {
   );
 }
 
-/* ======================= 小花园 ======================= */
-const FLOWER_COLORS = [
-  { petal: '#e8551f', center: '#f0b32a' },
-  { petal: '#f0a6c8', center: '#cd6a3c' },
-  { petal: '#a4c736', center: '#2f9e44' },
-  { petal: '#1f5fa8', center: '#f0a6c8' },
-  { petal: '#f0b32a', center: '#e8551f' },
-  { petal: '#cd6a3c', center: '#a4c736' },
-];
-function flowerSVG(x, y, colorIdx, scale, fresh) {
-  const c = FLOWER_COLORS[colorIdx % FLOWER_COLORS.length];
-  return `<g class="${fresh ? 'g-flower fresh' : 'g-flower'}" transform="translate(${x},${y}) scale(${scale})">
-    <line x1="0" y1="0" x2="0" y2="44" stroke="#5a7a3e" stroke-width="3.5" stroke-linecap="round"/>
-    <ellipse cx="-7" cy="24" rx="6.5" ry="3.5" fill="#5a7a3e" transform="rotate(-30 -7 24)"/>
-    <ellipse cx="7" cy="32" rx="6.5" ry="3.5" fill="#5a7a3e" transform="rotate(30 7 32)"/>
-    <circle cx="0" cy="-12" r="9.5" fill="${c.petal}"/><circle cx="11" cy="-4" r="9.5" fill="${c.petal}"/>
-    <circle cx="-11" cy="-4" r="9.5" fill="${c.petal}"/><circle cx="7" cy="8" r="9.5" fill="${c.petal}"/>
-    <circle cx="-7" cy="8" r="9.5" fill="${c.petal}"/><circle cx="0" cy="-2" r="7" fill="${c.center}"/>
-    <circle cx="-2.4" cy="-3" r="1.1" fill="#1f1c19"/><circle cx="2.4" cy="-3" r="1.1" fill="#1f1c19"/>
-    <path d="M-2 1 Q0 3 2 1" stroke="#1f1c19" stroke-width="1.2" fill="none" stroke-linecap="round"/></g>`;
-}
-function sproutSVG(x, y) {
-  return `<g class="g-sprout" transform="translate(${x},${y})">
-    <line x1="0" y1="0" x2="0" y2="16" stroke="#9aab7a" stroke-width="2" stroke-linecap="round"/>
-    <ellipse cx="-4.5" cy="6" rx="4" ry="2.5" fill="#9aab7a" transform="rotate(-40 -4.5 6)"/>
-    <ellipse cx="4.5" cy="3" rx="4" ry="2.5" fill="#9aab7a" transform="rotate(40 4.5 3)"/></g>`;
-}
-function weedSVG(x, y, sway) {
-  return `<g class="g-weed" transform="translate(${x},${y}) rotate(${sway})">
-    <path d="M0 0 Q-3 -8 -1 -16 Q3 -22 1 -28" stroke="#6e8a4d" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M0 0 Q4 -7 2 -14" stroke="#6e8a4d" stroke-width="2" fill="none" stroke-linecap="round"/></g>`;
-}
-function gardenTagline(n, streak) {
-  if (n === 0) return streak > 0 ? '今天先扫了地，等下一颗种子。' : '你这片地刚翻好，等第一颗种子。';
-  if (n <= 2) return '冒头了，慢慢来。';
-  if (n <= 5) return '开始热闹了。';
-  if (n <= 10) return '花圃丰盛，杂草也长起来。';
-  return '一整片小宇宙。';
+/* ======================= 小花园（花卉图鉴收集） ======================= */
+function dexTagline(discovered, total, streak) {
+  if (discovered === 0) return streak > 0 ? '地翻好了，去拆个纠结，掉第一朵花。' : '空空的一片地，等第一颗种子。';
+  if (discovered < total / 3) return '图鉴刚开张，慢慢集。';
+  if (discovered < total * 2 / 3) return '越开越热闹了。';
+  if (discovered < total) return `就差 ${total - discovered} 种集齐！`;
+  return '全图鉴集齐，你这片是小宇宙。';
 }
 
 function Garden({ tick }) {
   const s = store.get();
-  const history = s.history || [];
-  const flowers = history.length;
-  const opened = s.opened || 0;
   const streak = store.streak();
-
-  const svg = useMemo(() => {
-    const VW = 360, VH = 200, slots = 16, cols = 4, rows = 4;
-    const cellW = VW / cols, cellH = (VH - 32) / rows;
-    let out = `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg" class="garden-svg">`;
-    out += `<rect x="0" y="${VH - 28}" width="${VW}" height="28" fill="#dec79f"/>`;
-    out += `<rect x="0" y="${VH - 28}" width="${VW}" height="3" fill="#b8a37d"/>`;
-    const weeds = Math.min(streak * 2, 12);
-    for (let i = 0; i < weeds; i++) out += weedSVG((i * 53) % VW, VH - 26, ((i * 17) % 30) - 15);
-    const visible = Math.min(flowers, slots);
-    for (let i = 0; i < slots; i++) {
-      const r = Math.floor(i / cols), col = i % cols;
-      const baseX = col * cellW + cellW / 2 + ((i * 11) % 9) - 4;
-      const baseY = (r + 1) * cellH - 4 + ((i * 7) % 6) - 3;
-      if (i < visible) {
-        const newest = i === visible - 1;
-        out += flowerSVG(baseX, baseY, i, newest ? 1.1 : 0.9 + (i % 3) * 0.05, newest);
-      } else if (i < visible + 2) {
-        out += sproutSVG(baseX, baseY + 24);
-      }
-    }
-    out += '</svg>';
-    return out;
-  }, [flowers, streak]);
-
+  const summary = useMemo(() => store.gardenSummary(), [tick]);
   const persona = useMemo(() => { try { return computePersona(s, streak); } catch { return null; } }, [tick]);
-  const recent = history.slice(0, 5);
+
+  // 花圃：把最近收的花真种出来
+  const rolls = s.garden.rolls || [];
+  const bed = rolls.slice(-12).map(r => speciesById[r.id]).filter(Boolean).reverse();
 
   return (
     <>
       <div className="card garden-hero">
-        <div className="sectionTitle"><b>小花园</b><span>每解一个小纠结，就开一朵花</span></div>
-        <p className="garden-tagline">{gardenTagline(flowers, streak)}</p>
+        <div className="sectionTitle"><b>花卉图鉴</b><span>解纠结掉花 · 概率收集</span></div>
+        <p className="garden-tagline">{dexTagline(summary.discovered, totalSpecies, streak)}</p>
         <div className="garden-stats">
-          <div className="g-stat"><b>{flowers}</b><span>朵花</span></div>
+          <div className="g-stat"><b>{summary.discovered}/{totalSpecies}</b><span>图鉴</span></div>
+          <div className="g-stat"><b>{summary.total}</b><span>总收获</span></div>
           <div className="g-stat"><b>{streak}</b><span>天连续</span></div>
-          <div className="g-stat"><b>{opened}</b><span>颗已拆</span></div>
         </div>
       </div>
+
       <div className="card">
-        <div className="sectionTitle"><b>花圃</b><span>{flowers === 0 ? '这里很安静' : flowers + ' 朵在长'}</span></div>
-        <Svg className="garden-canvas" html={svg} />
+        <div className="sectionTitle"><b>花圃</b><span>{bed.length === 0 ? '这里很安静' : '最近种下的'}</span></div>
+        {bed.length === 0 ? (
+          <p className="empty">还没有花。去「今日」拆颗情绪小球、采纳一个答案，就会掉一朵。</p>
+        ) : (
+          <div className="flower-bed">
+            <div className="bed-row">
+              {bed.map((sp, i) => (
+                <span key={i} className={'bed-flower r-' + sp.rarity} title={sp.name}
+                  dangerouslySetInnerHTML={{ __html: sp.svg }} />
+              ))}
+            </div>
+            <div className="bed-soil" />
+          </div>
+        )}
       </div>
+
       <div className="card">
-        <div className="sectionTitle"><b>最近的收成</b><span>近 5 个小决定</span></div>
-        <div className="garden-recent">
-          {recent.length === 0 ? (
-            <p className="empty">还没收成。去「今日」拆一颗情绪小球。</p>
-          ) : recent.map((hh, i) => {
-            const dt = new Date(hh.time || Date.now());
-            const c = FLOWER_COLORS[i % FLOWER_COLORS.length];
+        <div className="sectionTitle"><b>图鉴</b><span>已发现 {summary.discovered} / {totalSpecies}</span></div>
+        <div className="dex-grid">
+          {SPECIES.map((sp) => {
+            const count = summary.byId[sp.id] || 0;
+            const got = count > 0;
+            const r = RARITY[sp.rarity];
             return (
-              <div className="harvest-item" key={i}>
-                <span className="harvest-dot" style={{ background: c.petal }}></span>
-                <div className="harvest-body">
-                  <p className="harvest-q">{hh.q || '一颗小纠结'}</p>
-                  <p className="harvest-a">{hh.plan || hh.ans || ''}</p>
-                </div>
-                <span className="harvest-date">{(dt.getMonth() + 1) + '/' + dt.getDate()}</span>
+              <div key={sp.id} className={'dex-cell' + (got ? '' : ' locked')}
+                style={{ '--rar': r.color }}>
+                <span className="dex-rarity" style={{ color: r.color }}>{r.emoji}{r.name}</span>
+                <span className="dex-icon" dangerouslySetInnerHTML={{ __html: sp.svg }} />
+                <span className="dex-name">{got ? sp.name : '？？？'}</span>
+                {count > 1 && <span className="dex-count">×{count}</span>}
               </div>
             );
           })}
         </div>
+        <p className="muted small" style={{ marginTop: 10 }}>
+          掉落概率：🌱普通 58% · 🔹稀有 30% · 🔮史诗 10% · 🌟传说 2%
+        </p>
       </div>
+
       {persona && (
         <div className="card">
           <div className="sectionTitle"><b>决策人格</b><span>本地行为分析</span></div>
