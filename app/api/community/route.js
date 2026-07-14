@@ -18,7 +18,13 @@ export async function GET(req) {
     const posts = await listPosts(voter);
     return NextResponse.json({ db: true, posts });
   } catch (e) {
-    return NextResponse.json({ db: true, error: e?.message || String(e), posts: [] }, { status: 500 });
+    // DB 连不上时别让广场空着：退回种子帖（只读），DB 恢复后自动回到真实数据
+    return NextResponse.json({
+      db: false,
+      degraded: true,
+      error: e?.message || String(e),
+      posts: seedPosts.map(p => ({ ...p, total: p.v[0] + p.v[1], myVote: null })),
+    });
   }
 }
 
