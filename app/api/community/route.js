@@ -4,6 +4,7 @@ import { seedPosts } from '@/lib/data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30; // Vercel 免费档默认 10s 强杀；DB 慢唤醒时要活到 connect_timeout(20s) 之后
 
 /* 列出广场帖子 */
 export async function GET(req) {
